@@ -92,5 +92,165 @@ $response->send();
 $kernel->terminate($request, $response);
 ```
 
+## Service Container Binding and Resolution
+
+As the step 2 of Request Lifecycle, Service Container Binding works in a similar way but  the documentation explains some specific cases:
+
+### When closure is used
+
+Check the following code:
+
+```php
+$app->singleton('APIController', function() {
+    return new \MyPackage\API\RESTFullController();
+});
+```
+
+So you can use the next code:
+
+```php
+$RESTFullController = $app->instance('APIController');
+```
+
+That's simple. 
+
+### When contextual cases are used
+
+Check the following code:
+
+```php
+$app->when('APIController')
+    ->needs(\App\User::class)
+    ->give(function() {
+    return \App\User::query();    
+});
+```
+
+So you can use the next code:
+
+```php
+class ApiController {
+    public function index(\App\User $users) { 
+        return response()->json($users->paginate(25));
+    }
+}
+```
+
+So you don't need to use **query** method. Because $users variable will be a **QueryBuilder**.
+
+### When automatic injection is used
+
+Check the following code:
+
+```php
+use CarRepository;
+
+class CarControllers extends \App\Http\Controllers\Controller {
+    public function index(CarRepository $carRepository) { 
+        return response()->json($carRepository->latestWithUser(100));
+    }
+}
+```
+
+That code will works because **CarRepository** will be injected automatically. I'll use the other implementation to explain this feature more easily:
+
+```php
+use CarRepository;
+
+class CarControllers extends \App\Http\Controllers\Controller {
+    protected $carRepository;
+    public function __construct() {
+        $this->carRepository = new CarRepository();
+    }
+    public function index() { 
+        return response()->json($this->carRepository->latestWithUser(100));
+    }
+}
+```
+
+As you can see, **CarRepository** should be initialized using **new** keyword.
+
+### When extending binding is used
+
+Check the following code:
+
+```php
+$this->app->extend(ContainerManager::class, function ($model, $app) {
+    if (env('APP_ENV') == 'local')
+        return new DockerContainerManager($model);
+    else
+        return new KubernetesManager($model);
+});
+```
+
+Imagine that **ContainerManager** will be used by developers to instantiate new **Docker Containers** as the environment is **local** but when the software is running on production then **KubernetesManager** will be used. 
+
+### How to resolve
+
+There are different two different ways to resolve instances:
+
+#### Using make method
+
+That's is only available when **app** variable is on context.
+
+```php
+$containerManager = $app->make('ContainerManager');
+```
+
+It supports variables using **With** method extension.
+
+```php
+$containerManager = $app->makeWith('ContainerManager', ['region' => 'CL1']);
+```
+
+#### Using resolve method
+
+This method is very simple because it uses **resolve** helper.
+
+```php
+$containerManager = resolve('ContainerManager', ['region' => 'CL1']);
+```
+
+#### Using tagged method
+
+This way is perfect to use when you have multiple binds and you wanna aggregate their usages:
+
+```php
+$this->app->bind('ServerManager', function () { ... });
+
+$this->app->bind('ClusterManager', function () { ... });
+
+$this->app->bind('DatabaseManager', function () { ... });
+
+$this->app->tag(['ServerManager', 'ClusterManager', 'DatabaseManager'], 'infrastructure');
+
+$this->app->bind('InfrastructureManager', function ($app) {
+    return new InfrastructureManager($app->tagged('infrastructure'));
+});
+```
+
+That's nice.
+
+#### Using PSR-11 way
+
+PSR-11 is a PHP-FIG standard. That's very simple to use. Just automatically inject the **ContainerInterface** and use **get** method.
+
+```php
+use Psr\Container\ContainerInterface;
+
+Route::get('/', function (ContainerInterface $container) {
+    $containerManager = $container->get('ContainerManager');
+});
+```
 
 
+#### Optional: Tracking events
+
+Events are a nice part of Laravel framework. To catch events you should use the following code:
+
+```php
+$this->app->resolving(ContainerManager::class, function ($manager, $app) {
+    $manager->driver = new KubernetesDriver();
+    Logger::info('New container manager instance was requested and is ready to use!');
+});
+```
