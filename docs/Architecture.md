@@ -312,3 +312,39 @@ As is commonly, the provider should be registered on **providers** array of **co
 ServiceProviders also support **Automatic Injection**. 
 
 The **AppServiceProviders** has two arrays named **bindings** and **singletons** to provide a simple way to bind implementations to classes.
+
+## Facades
+
+Facades are simple ways to add features to your application using service container.
+
+Let's make a example:
+
+
+```php
+class Logger extends Facade {
+    protected static function getFacadeAccessor() { return 'logger'; }
+}
+```
+
+So if the service container via service provider has bind a class or object in **logger** space then you will retrieve that instance using the facade.
+
+
+```php
+Logger::infoToSlack("Hello from the App team!");
+```
+
+Remember that should be bind into a Service Provider and registered in **app.php** config.
+
+Facades support testing out-of-box. So, imagine that **infoToSlack** return a boolean.
+
+Think about a command with the past code then in your tests you can write the next code:
+
+```php
+Logger::shouldReceive('infoToLog')
+    ->with('message')
+    ->andReturn(TRUE);
+
+$this->artisan("run:logger:infoToLog Hello");
+```
+
+The command will be send hello to Slack and obviusly the test will be pass.
