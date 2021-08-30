@@ -254,3 +254,61 @@ $this->app->resolving(ContainerManager::class, function ($manager, $app) {
     Logger::info('New container manager instance was requested and is ready to use!');
 });
 ```
+
+## Service Providers
+
+Service providers are a simple way to add features to your application not inside of **Controllers**, **Commands** or **Repositories**.
+
+Every provider should be extend the ServiceProvider class of Illuminate\Support namespace and must be have **register** and **boot** methods.
+
+The provider can be created using **make:provider** command of **artisan** CLI. 
+
+The **register** method should be used only to bind things to app container.
+
+The **boot** method will be executed after the registration of the provider.
+
+```php
+class MyProvider extends ServiceProvider
+{
+    public function register()
+    {
+        $this->app->singleton(ServerManager::class, function ($app) {
+            return new ServerManager(config('region'), config('server_provider_token'));
+        });
+    }
+
+    public function boot()
+    {
+        $manager = $this->app->resolve(ServerManager::class);
+        $manager->initialize();
+    }   
+}
+```
+
+Also you can deffer the binding implementing **DeferrableProvider** and that's very useful do not bind objects or classes when that is not needed. To reach this goal you should implement your provider as the following way:
+
+```php
+use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Support\ServiceProvider;
+
+class MyProvider extends ServiceProvider implements DeferrableProvider {
+    public function register()
+    {
+        $this->app->singleton(ServerManager::class, function ($app) {
+            return new ServerManager(config('region'), config('server_provider_token'));
+        });
+    }
+    public function provides()
+    {
+        return [ServerManager::class];
+    }
+}
+```
+
+Your binding will be done only when is needed by implementing **DeferrableProvider** and **provides** method. 
+
+As is commonly, the provider should be registered on **providers** array of **config/app.php** config.
+
+ServiceProviders also support **Automatic Injection**. 
+
+The **AppServiceProviders** has two arrays named **bindings** and **singletons** to provide a simple way to bind implementations to classes.
