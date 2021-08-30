@@ -38,3 +38,24 @@ class WelcomeController extends Controller {}
 ```
 
 Well done, you have learned how to use **controller namespacing**.
+
+## Single Action Controller
+
+Also named **invokable controller** are controllers with just one method **__invoke()**. Using the **WelcomeController** example i'll illustrate this in the next way:
+
+```php
+<?php
+namespace App\Http\Controllers\Path;
+use App\Http\Controllers\Controller;
+class WelcomeController extends Controller {
+    public function __invoke() { return view('welcome'); }
+}
+```
+
+Then you should register them without the method name, for example:
+
+```php
+Route::get('/', 'Path\WelcomeController');
+```
+
+Not hard to understand.
