@@ -328,7 +328,6 @@ class Logger extends Facade {
 
 So if the service container via service provider has bind a class or object in **logger** space then you will retrieve that instance using the facade.
 
-
 ```php
 Logger::infoToSlack("Hello from the App team!");
 ```
