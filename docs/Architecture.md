@@ -348,3 +348,31 @@ $this->artisan("run:logger:infoToLog Hello");
 ```
 
 The command will be send hello to Slack and obviusly the test will be pass.
+
+## HTTP Verbs
+
+As we expect, this topic is really simple:
+
+We have different verbs of HTTP, like GET, HEAD, POST, PUT, PATCH, DELETE, CONNECT, TRACE and OPTIONS. 
+
+In Laravel the supported methods are:
+
+#### GET
+
+Used on **index** or **views** operations.
+
+#### POST
+
+Used on **store** or **insert** operations.
+
+#### PUT or PATCH
+
+Used on **update** operations.
+
+#### DELETE
+
+Used on **destroy** operations.
+
+#### OPTIONS
+
+Used to list **operations**. 
